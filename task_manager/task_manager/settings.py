@@ -28,9 +28,10 @@ SECRET_KEY = 'django-insecure-f48ne%0dbt4iudausp5^^*smbg5^^qxz@y6q%edm!tj0-q17$6
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    'localhost',
     'webserver',
-    "127.0.0.1"
+    'localhost',
+    '127.0.0.1',
+    '.onrender.com'  # Для всех доменов Render
 ]
 
 
@@ -60,7 +61,7 @@ ROOT_URLCONF = 'task_manager.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'task_manager/templates'],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
