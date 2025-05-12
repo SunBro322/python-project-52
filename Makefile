@@ -13,3 +13,6 @@ build:
 
 render-start:
 	gunicorn task_manager.wsgi --bind=0.0.0.0:8000
+
+lint:
+	uv run flake8
