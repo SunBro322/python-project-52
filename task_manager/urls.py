@@ -23,4 +23,5 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('users/', include('users.urls')),
     path('statuses/', include('statuses.urls')),
+    path('labels/', include('labels.urls')),
 ]
