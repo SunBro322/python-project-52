@@ -1,47 +1,56 @@
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import ProtectedError
-from django.shortcuts import redirect
 from django.urls import reverse_lazy
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView
-from .models import Label
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 
-class LabelListView(LoginRequiredMixin, ListView):
-    model = Label
-    template_name = 'labels/label_list.html'
-    context_object_name = 'labels'
+from task_manager.labels.forms import LabelForm
+from task_manager.labels.models import Label
+from task_manager.mixins import DeleteValidationMixin
+from task_manager.views import LoginRequiredMixin
 
-class LabelCreateView(LoginRequiredMixin, CreateView):
+
+class LabelMixin:
     model = Label
-    fields = ['name']
-    template_name = 'labels/label_form.html'
-    success_url = reverse_lazy('labels')
+    success_url = reverse_lazy("labels")
+
+
+class LabelsView(LoginRequiredMixin, LabelMixin, ListView):
+    template_name = "labels/labels_list.html"
+    context_object_name = "labels"
+
+
+class LabelCreateView(LoginRequiredMixin, LabelMixin, CreateView):
+    form_class = LabelForm
+    template_name = "form.html"
+    extra_context = dict(title="Создать метку", button="Создать")
 
     def form_valid(self, form):
-        messages.success(self.request, 'Метка успешно создана')
+        messages.success(self.request, "Метка успешно создана")
         return super().form_valid(form)
 
-class LabelUpdateView(LoginRequiredMixin, UpdateView):
-    model = Label
-    fields = ['name']
-    template_name = 'labels/label_form.html'
-    success_url = reverse_lazy('labels')
+    def form_invalid(self, form):
+        messages.error(self.request, "Метка с таким именем уже существует")
+        return super().form_invalid(form)
+
+
+class LabelUpdateView(LoginRequiredMixin, LabelMixin, UpdateView):
+    form_class = LabelForm
+    template_name = "form.html"
+    extra_context = dict(title="Изменение метки", button="Изменить")
 
     def form_valid(self, form):
-        messages.success(self.request, 'Метка успешно изменена')
+        messages.success(self.request, "Метка успешно изменена")
         return super().form_valid(form)
 
-class LabelDeleteView(LoginRequiredMixin, DeleteView):
-    model = Label
-    template_name = 'labels/label_confirm_delete.html'
-    success_url = reverse_lazy('labels')
+    def form_invalid(self, form):
+        messages.error(self.request, "Метка с таким именем уже существует")
+        return super().form_invalid(form)
 
-    def post(self, request, *args, **kwargs):
-        try:
-            return super().post(request, *args, **kwargs)
-        except ProtectedError:
-            messages.error(
-                request,
-                'Невозможно удалить метку, так как она связана с задачами'
-            )
-            return redirect('labels')
+
+class LabelDeleteView(
+    LoginRequiredMixin, DeleteValidationMixin, LabelMixin, DeleteView
+):
+    template_name = "delete_form.html"
+    context_object_name = "model"
+    extra_context = dict(title="метки")
+    msg_success = "Метка успешно удалена"
+    msg_error = "Невозможно удалить метку, потому что она используется"

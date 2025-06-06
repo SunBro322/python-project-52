@@ -1,14 +1,18 @@
 from django.urls import path
-from .views import (
-    StatusListView,
-    StatusCreateView,
-    StatusUpdateView,
-    StatusDeleteView
-)
+
+from task_manager.statuses import views
 
 urlpatterns = [
-    path('', StatusListView.as_view(), name='statuses'),
-    path('create/', StatusCreateView.as_view(), name='status_create'),
-    path('<int:pk>/update/', StatusUpdateView.as_view(), name='status_update'),
-    path('<int:pk>/delete/', StatusDeleteView.as_view(), name='status_delete'),
+    path("", views.StatusesView.as_view(), name="statuses"),
+    path("create/", views.StatusCreateView.as_view(), name="status_create"),
+    path(
+        "<int:pk>/update/",
+        views.StatusUpdateView.as_view(),
+        name="status_update"
+        ),
+    path(
+        "<int:pk>/delete/",
+        views.StatusDeleteView.as_view(),
+        name="status_delete"
+        ),
 ]

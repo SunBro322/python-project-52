@@ -1,8 +1,12 @@
 from django.db import models
 
+
 class Status(models.Model):
-    name = models.CharField(max_length=100, unique=True, verbose_name="Название")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    name = models.CharField("Имя", max_length=50, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        db_table = "statuses"

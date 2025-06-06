@@ -1,18 +1,23 @@
 install:
 	uv sync
 
-collectstatic:
-	uv run manage.py collectstatic --noinput
+dev:
+	uv run python manage.py runserver 9090
 
-migrate:
-	uv run manage.py migrate
+start-render:
+	gunicorn task_manager.wsgi:application --bind 0.0.0.0:8000
 
 build:
-	chmod +x ./build.sh
 	./build.sh
 
-render-start:
-	gunicorn task_manager.wsgi --bind=0.0.0.0:8000
+migrations:
+	uv run python manage.py makemigrations
 
-lint:
-	uv run flake8
+migrate:
+	uv run python manage.py migrate
+
+linter:
+	uv run ruff check task_manager
+
+test:
+	uv run manage.py test

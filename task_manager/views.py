@@ -1,37 +1,41 @@
-from django.db.models import Q
 from django.contrib import messages
+from django.contrib.auth.forms import AuthenticationForm as AuthForm
+from django.contrib.auth.mixins import LoginRequiredMixin as LoginRequired
+from django.contrib.auth.views import LoginView as UserLoginView
+from django.contrib.auth.views import LogoutView as UserLogoutView
+from django.shortcuts import redirect
+from django.urls import reverse_lazy
 
-class UserDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
-    model = User
-    template_name = 'users/user_confirm_delete.html'
-    success_url = reverse_lazy('users')
 
-    def test_func(self):
-        return self.request.user == self.get_object()
-
-    def post(self, request, *args, **kwargs):
-        user = self.get_object()
-        # Проверка связанных задач
-        if Task.objects.filter(Q(author=user) | Q(executor=user)).exists():
+class LoginRequiredMixin(LoginRequired):
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
             messages.error(
-                request,
-                'Невозможно удалить пользователя, так как он связан с задачами'
-            )
-            return redirect('users')
-        return super().post(request, *args, **kwargs)
+                request, ("Вы не авторизованы! Пожалуйста, выполните вход.")
+                )
+            return redirect(reverse_lazy("login"))
+        return super().dispatch(request, *args, **kwargs)
 
 
-class TaskListView(LoginRequiredMixin, ListView):
-    model = Task
-    template_name = 'tasks/task_list.html'
-    context_object_name = 'tasks'
+class LoginView(UserLoginView):
+    template_name = "form.html"
+    form_class = AuthForm
+    extra_context = dict(title="Вход", button="Войти")
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        # Фильтр по статусу
-        if status_id := self.request.GET.get('status'):
-            queryset = queryset.filter(status_id=status_id)
-        # Фильтр по исполнителю
-        if executor_id := self.request.GET.get('executor'):
-            queryset = queryset.filter(executor_id=executor_id)
-        return queryset
+    def form_valid(self, form):
+        messages.success(self.request, "Вы залогинены")
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        messages.error(
+            self.request,
+            """Пожалуйста, введите правильные имя пользователя и пароль.
+            Оба поля могут быть чувствительны к регистру.""",
+        )
+        return super().form_invalid(form)
+
+
+class LogoutView(UserLogoutView):
+    def dispatch(self, request, *args, **kwargs):
+        messages.info(request, "Вы разлогинены")
+        return super().dispatch(request, *args, **kwargs)

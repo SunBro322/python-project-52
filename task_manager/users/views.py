@@ -1,45 +1,72 @@
-from django.shortcuts import render
-from django.contrib.auth import login, logout
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.contrib.auth.views import LoginView, LogoutView
+from django.contrib import messages
+from django.shortcuts import redirect
 from django.urls import reverse_lazy
-from django.views.generic import (
-    ListView, CreateView, UpdateView, DeleteView
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+
+from task_manager.mixins import DeleteValidationMixin
+from task_manager.users.forms import (
+    CustomUsersCreateForm,
+    CustomUsersUpdateForm,
 )
-from .models import User
+from task_manager.users.models import User
+from task_manager.views import LoginRequiredMixin
 
-class UserListView(ListView):
+
+class UserOwnersipCheckMixin:
+    def dispatch(self, request, *args, **kwargs):
+        if self.get_object() != self.request.user:
+            messages.error(
+                request, "У вас нет прав для изменения другого пользователя."
+            )
+            return redirect(self.success_url)
+        return super().dispatch(request, *args, **kwargs)
+
+
+class UsersView(ListView):
     model = User
-    template_name = 'users/user_list.html'
-    context_object_name = 'users'
+    template_name = "users/users_list.html"
+    context_object_name = "users"
 
-class UserCreateView(CreateView):
+
+class UsersCreateView(CreateView):
     model = User
-    template_name = 'users/user_form.html'
-    fields = ['username', 'password', 'email', 'first_name', 'last_name']
-    success_url = reverse_lazy('users')
+    form_class = CustomUsersCreateForm
+    template_name = "form.html"
+    success_url = reverse_lazy("login")
+    extra_context = dict(title="Регистрация", button="Зарегистрировать")
 
-class UserUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    def form_valid(self, form):
+        messages.success(self.request, "Пользователь успешно зарегистрирован")
+        return super().form_valid(form)
+
+
+class UsersUpdateView(LoginRequiredMixin, UserOwnersipCheckMixin, UpdateView):
     model = User
-    template_name = 'users/user_form.html'
-    fields = ['username', 'email', 'first_name', 'last_name']
-    success_url = reverse_lazy('users')
+    form_class = CustomUsersUpdateForm
+    template_name = "form.html"
+    success_url = reverse_lazy("users")
+    extra_context = dict(title="Изменение пользователя", button="Изменить")
 
-    def test_func(self):
-        return self.request.user == self.get_object()
+    def post(self, request, *args, **kwargs):
+        messages.success(request, "Пользователь успешно изменен")
+        return super().post(request, *args, **kwargs)
 
-class UserDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+
+class UsersDeleteView(
+    LoginRequiredMixin,
+    DeleteValidationMixin,
+    UserOwnersipCheckMixin,
+    DeleteView
+):
     model = User
-    template_name = 'users/user_confirm_delete.html'
-    success_url = reverse_lazy('users')
-
-    def test_func(self):
-        return self.request.user == self.get_object()
-
-class LoginView(LoginView):
-    template_name = 'users/login.html'
-    next_page = reverse_lazy('index')
-
-class LogoutView(LogoutView):
-    next_page = reverse_lazy('index')
-# Create your views here.
+    template_name = "delete_form.html"
+    success_url = reverse_lazy("users")
+    context_object_name = "model"
+    extra_context = dict(title="пользователя")
+    msg_success = "Пользователь успешно удален"
+    msg_error = "Невозможно удалить пользователя, потому что он используется"

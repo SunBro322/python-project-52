@@ -1,13 +1,4 @@
-*.egg-info
-__pycache__
-dist/
-*.pyc
-.venv
-.venv/
-.coverage
-.coverage/
-coverage.xml
-*_cache/
-venv
+db.sqlite3
 .env
+.python-version
 __pycache__/
